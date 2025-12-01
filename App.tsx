@@ -156,7 +156,7 @@ const App: React.FC = () => {
   const [audioSourceType, setAudioSourceType] = useState<'demo' | 'upload' | 'processed'>('demo');
 
   // Lyrics controls
-  const [fontSize, setFontSize] = useState<number>(24);
+  const [fontSize, setFontSize] = useState<number>(16);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
@@ -332,8 +332,8 @@ const App: React.FC = () => {
         <section className="max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-4">
             <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-              Youtube to Karaoke <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-accent">AI Lab</span>
+              Youtube to <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-accent">Karaoke AI Lab</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-xl mx-auto">
               Transform any song into a karaoke track using AI-powered Center Channel Extraction.

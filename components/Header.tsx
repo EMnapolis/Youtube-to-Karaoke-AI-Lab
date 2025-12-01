@@ -11,7 +11,7 @@ export const Header: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-              Youtube to Karaoke <span className="text-accent">AI Lab</span>
+              Youtube to <span className="text-accent">Karaoke AI Lab</span>
             </h1>
             <p className="text-xs text-gray-400">One-click Instrumental Generator</p>
           </div>
