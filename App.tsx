@@ -36,6 +36,21 @@ const getYoutubeId = (input: string) => {
   return match ? match[1] : null;
 };
 
+// Helper: Convert File to Base64 (for Gemini API)
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove "data:audio/mp3;base64," prefix to get just the base64 string
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 // --- Web Audio API Utils for Vocal Removal ---
 
 // Convert AudioBuffer to WAV Blob
@@ -213,9 +228,13 @@ const App: React.FC = () => {
       // 1. Process Audio (Real Web Audio API if Upload Mode)
       let finalAudioUrl = '';
       let blob: Blob | null = null;
+      let audioBase64: string | undefined = undefined;
 
       if (inputMode === 'upload' && uploadedFile) {
         try {
+          // Prepare Base64 for Gemini Transcription
+          audioBase64 = await fileToBase64(uploadedFile);
+
           // REAL VOCAL REMOVAL LOGIC
           blob = await processAudioFile(uploadedFile);
           finalAudioUrl = URL.createObjectURL(blob);
@@ -241,7 +260,7 @@ const App: React.FC = () => {
       }
       if (!searchTitle) searchTitle = "the song in this video";
 
-      const generatedLyrics = await generateLyrics(searchTitle);
+      const generatedLyrics = await generateLyrics(searchTitle, audioBase64 ? { base64: audioBase64, mimeType: uploadedFile?.type || 'audio/mp3' } : undefined);
       
       clearInterval(interval);
       setProgress(100);
@@ -426,7 +445,7 @@ const App: React.FC = () => {
               <p className="text-center text-xs text-blue-300 mt-2 animate-pulse font-mono">
                 {progress < 30 && "Decoding Audio Data..."}
                 {progress >= 30 && progress < 60 && "Applying Phase Inversion (Vocal Removal)..."}
-                {progress >= 60 && "Encoding WAV & Generating Lyrics..."}
+                {progress >= 60 && "Encoding WAV & Transcribing Lyrics..."}
               </p>
             </div>
           )}
@@ -520,19 +539,19 @@ const App: React.FC = () => {
 
                 <div 
                   ref={lyricsContainerRef}
-                  className="flex-1 overflow-y-auto p-8 space-y-8 text-center scroll-smooth"
+                  className="flex-1 overflow-y-auto p-8 space-y-2 text-center scroll-smooth"
                 >
                   <div className="h-4"></div> {/* Top Spacer */}
                   {lyrics ? (
                     lyrics.split('\n').map((line, index) => {
                       const cleanLine = line.trim();
-                      if (!cleanLine) return <br key={index} className="h-4 block"/>;
+                      if (!cleanLine) return <div key={index} className="h-2" />;
                       
                       const isStructure = cleanLine.startsWith('(') || cleanLine.startsWith('[');
                       
                       if (isStructure) {
                         return (
-                          <div key={index} className="py-4">
+                          <div key={index} className="py-2 mt-4 mb-2">
                               <span className="text-xs font-bold text-accent border border-accent/30 px-3 py-1 rounded-full uppercase tracking-widest bg-accent/10">
                                 {cleanLine.replace(/[()\[\]]/g, '')}
                               </span>
@@ -543,7 +562,7 @@ const App: React.FC = () => {
                       return (
                         <p 
                           key={index} 
-                          className="font-bold text-gray-300 hover:text-white transition-all duration-300 cursor-default leading-relaxed"
+                          className="font-bold text-gray-300 hover:text-white transition-all duration-300 cursor-default leading-snug"
                           style={{ 
                             fontSize: `${fontSize}px`,
                             textShadow: '0 2px 10px rgba(0,0,0,0.5)' 

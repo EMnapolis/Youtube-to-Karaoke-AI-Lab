@@ -2,27 +2,48 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-export const generateLyrics = async (songTitle: string): Promise<string> => {
+export const generateLyrics = async (songTitle: string, audioData?: { base64: string, mimeType: string }): Promise<string> => {
   if (!process.env.API_KEY) {
     console.warn("No API Key provided. Returning mock lyrics.");
     return mockLyrics(songTitle);
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `You are a professional karaoke lyrics transcriber and linguist specialized in Asian and Western music.
-      Generate the complete, high-quality lyrics for the song "${songTitle}".
+    const parts: any[] = [];
+
+    // System instruction for the model
+    const systemPrompt = `
+      You are a professional karaoke lyrics transcriber and linguist.
+      
+      Task:
+      ${audioData ? "Listen to the provided audio file and transcribe the lyrics exactly as they are sung." : `Retrieve or generate the lyrics for the song "${songTitle}".`}
       
       Strict Requirements:
-      1. **Language Support**: Fully support Thai (ภาษาไทย), English, and mixed languages. Preserve the original language of the song exactly.
-      2. **Formatting**: 
-         - Use clear section headers like [Verse], [Chorus], [Bridge], [Pre-Chorus].
-         - Ensure separate lines for readability (Teleprompter style).
-         - No extra conversational text (e.g., "Here is the result"). Return ONLY the lyrics.
-      3. **Accuracy**: Ensure correct spelling and line breaks matching the song's rhythm.
-      4. **Instrumental**: If the song is purely instrumental, return "[Instrumental Track]".
-      `,
+      1. **Language**: Fully support Thai (ภาษาไทย), English, and mixed languages. Preserve the original language exactly.
+      2. **Formatting**:
+         - Group lines into stanzas (Verses, Chorus). 
+         - Use clear section headers in brackets like [Verse], [Chorus].
+         - Return ONLY the lyrics text. No conversational filler.
+      3. **Spacing**: Do not add excessive blank lines. Keep verses compact.
+      4. **Instrumental**: If the audio is purely instrumental with no vocals, return "[Instrumental Track]".
+    `;
+
+    // Add Audio Part if available
+    if (audioData) {
+      parts.push({
+        inlineData: {
+          mimeType: audioData.mimeType,
+          data: audioData.base64
+        }
+      });
+    }
+
+    // Add Text Prompt
+    parts.push({ text: systemPrompt });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts }, // Use 'parts' structure for multimodal
     });
 
     return response.text || "Could not generate lyrics. Please try again.";
@@ -56,19 +77,6 @@ Feel the rhythm, feel the heat
 Sing it loud, sing it free
 It's just the music and me
 
-[Bridge]
-Download the track, take it away
-Sing your heart out every day
-High quality audio, crystal clear
-The best karaoke app is here
-
-[Chorus]
-This is the ${title} karaoke beat
-Feel the rhythm, feel the heat
-Sing it loud, sing it free
-It's just the music and me
-
 [Outro]
 Yeah... just the music and me.
-(Fade out)
 `;
