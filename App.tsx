@@ -14,7 +14,11 @@ import {
   Youtube,
   UploadCloud,
   FileAudio,
-  MicOff
+  MicOff,
+  ZoomIn,
+  ZoomOut,
+  Copy,
+  Check
 } from 'lucide-react';
 
 // Robust ID extractor that handles URLs and standard YouTube Iframe codes
@@ -135,6 +139,10 @@ const App: React.FC = () => {
   const [audioUrl, setAudioUrl] = useState<string>(''); // Source for the bottom player
   const [processedBlob, setProcessedBlob] = useState<Blob | null>(null); // Store the actual processed file
   const [audioSourceType, setAudioSourceType] = useState<'demo' | 'upload' | 'processed'>('demo');
+
+  // Lyrics controls
+  const [fontSize, setFontSize] = useState<number>(24);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -277,6 +285,21 @@ const App: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+    }
+  };
+
+  const adjustFontSize = (delta: number) => {
+    setFontSize(prev => Math.max(14, Math.min(64, prev + delta)));
+  };
+
+  const handleCopyLyrics = async () => {
+    if (!lyrics) return;
+    try {
+      await navigator.clipboard.writeText(lyrics);
+      setCopyStatus('copied');
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
     }
   };
 
@@ -465,11 +488,34 @@ const App: React.FC = () => {
               <div className="relative h-[400px] lg:h-[450px] bg-black/40 rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black pointer-events-none z-10" />
                 
+                {/* Lyrics Header with Controls */}
                 <div className="px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-md z-20 flex justify-between items-center">
                   <h3 className="font-bold text-lg flex items-center gap-2 text-white">
                     <PlayCircle className="w-5 h-5 text-accent" />
                     Teleprompter
                   </h3>
+                  
+                  {/* Lyrics Controls */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-black/40 rounded-lg p-1 mr-2 border border-white/10">
+                      <button onClick={() => adjustFontSize(-2)} className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-white transition-colors" title="Decrease Font Size">
+                        <ZoomOut className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-gray-500 w-8 text-center select-none">{fontSize}px</span>
+                      <button onClick={() => adjustFontSize(2)} className="p-1.5 hover:bg-white/10 rounded-md text-gray-400 hover:text-white transition-colors" title="Increase Font Size">
+                        <ZoomIn className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={handleCopyLyrics}
+                      disabled={!lyrics}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-medium rounded-lg border border-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {copyStatus === 'copied' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copyStatus === 'copied' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
                 </div>
 
                 <div 
@@ -497,8 +543,11 @@ const App: React.FC = () => {
                       return (
                         <p 
                           key={index} 
-                          className="text-2xl md:text-3xl font-bold text-gray-300 hover:text-white hover:scale-105 transition-all duration-300 cursor-default leading-relaxed"
-                          style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                          className="font-bold text-gray-300 hover:text-white transition-all duration-300 cursor-default leading-relaxed"
+                          style={{ 
+                            fontSize: `${fontSize}px`,
+                            textShadow: '0 2px 10px rgba(0,0,0,0.5)' 
+                          }}
                         >
                           {cleanLine}
                         </p>

@@ -11,15 +11,18 @@ export const generateLyrics = async (songTitle: string): Promise<string> => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `You are a professional karaoke lyrics transcriber. 
-      Generate the complete lyrics for the song likely identified by "${songTitle}". 
+      contents: `You are a professional karaoke lyrics transcriber and linguist specialized in Asian and Western music.
+      Generate the complete, high-quality lyrics for the song "${songTitle}".
       
-      Rules:
-      1. Return ONLY the lyrics.
-      2. No conversational filler or introductions.
-      3. Mark sections clearly like [Verse 1], [Chorus], [Bridge].
-      4. Ensure correct spacing between sections.
-      5. If the song is instrumental, return "[Instrumental Track]".`,
+      Strict Requirements:
+      1. **Language Support**: Fully support Thai (ภาษาไทย), English, and mixed languages. Preserve the original language of the song exactly.
+      2. **Formatting**: 
+         - Use clear section headers like [Verse], [Chorus], [Bridge], [Pre-Chorus].
+         - Ensure separate lines for readability (Teleprompter style).
+         - No extra conversational text (e.g., "Here is the result"). Return ONLY the lyrics.
+      3. **Accuracy**: Ensure correct spelling and line breaks matching the song's rhythm.
+      4. **Instrumental**: If the song is purely instrumental, return "[Instrumental Track]".
+      `,
     });
 
     return response.text || "Could not generate lyrics. Please try again.";
